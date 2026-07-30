@@ -180,7 +180,7 @@
         
         <div class="video-container">
             <video id="scenario-video" controls>
-                <source src="scenario1_start.mp4" type="video/mp4">
+                <source src="alpha-prompt.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
         </div>
@@ -363,12 +363,17 @@
                 evalFeedback.innerText = result.feedback;
 
                 if (result.score >= 80) {
+                    scenarioVideo.src = "branch1.mp4"; 
                     console.log("Loading Good Branch");
                 } else if (result.score >= 40) {
+                    scenarioVideo.src = "branch2.mp4"; 
                     console.log("Loading Acceptable Branch");
                 } else {
+                    scenarioVideo.src = "branch3.mp4"; 
                     console.log("Loading Bad Branch");
                 }
+                
+                scenarioVideo.play();
 
             } catch (error) {
                 showError("Failed to evaluate. API Error: " + error.message);
