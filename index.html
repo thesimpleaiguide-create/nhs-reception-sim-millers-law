@@ -254,6 +254,10 @@
                 introScreen.style.display = 'none';
                 simulatorScreen.style.display = 'block';
                 setupSpeechRecognition();
+                
+                // This line forces the video to start immediately
+                scenarioVideo.play();
+                
             } catch (err) {
                 micError.style.display = 'block';
                 console.error("Microphone access failed:", err);
