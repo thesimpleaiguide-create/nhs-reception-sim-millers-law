@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
+            background-color: #1e293b; /* Dark slate background */
             color: #f8fafc;
             margin: 0;
             padding: 20px;
@@ -18,20 +18,27 @@
         }
 
         .container {
-            background-color: #1e293b;
+            background-color: #273549; /* Slightly lighter slate for containers */
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
             max-width: 800px;
             width: 100%;
             text-align: center;
         }
 
         h1, h2 {
-            color: #60a5fa;
+            color: #60a5fa; /* Blue accent for headers */
+            margin-bottom: 5px;
         }
 
-        input[type="text"] {
+        .subtitle {
+            color: #cbd5e1;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"], input[type="password"] {
             width: 80%;
             padding: 12px;
             margin: 20px 0;
@@ -45,13 +52,14 @@
         button {
             padding: 12px 24px;
             font-size: 16px;
-            background-color: #3b82f6;
+            background-color: #3b82f6; /* Blue button */
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, opacity 0.2s;
             margin: 5px;
+            font-weight: 500;
         }
 
         button:hover {
@@ -61,6 +69,14 @@
         button:disabled {
             background-color: #475569;
             cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .record-btn {
+            background-color: #dc2626; /* Red for recording */
+        }
+        .record-btn:hover {
+            background-color: #b91c1c;
         }
 
         .video-container {
@@ -68,6 +84,7 @@
             border-radius: 8px;
             overflow: hidden;
             background-color: #000;
+            border: 1px solid #475569;
         }
 
         video {
@@ -83,12 +100,18 @@
             margin-bottom: 15px;
             text-align: left;
             border: 1px solid #475569;
+            line-height: 1.5;
         }
 
         #evaluation-box {
-            background-color: #166534;
+            background-color: #166534; /* Green success background */
             border-color: #14532d;
             display: none;
+        }
+        
+        #eval-score {
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
         /* Modal Styles */
@@ -112,10 +135,11 @@
             max-width: 500px;
             width: 90%;
             border: 1px solid #475569;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
         }
 
         .modal-header {
-            color: #ef4444;
+            color: #ef4444; /* Red alert */
             font-size: 1.25rem;
             font-weight: bold;
             margin-bottom: 15px;
@@ -128,12 +152,12 @@
             margin-bottom: 20px;
             line-height: 1.5;
             word-wrap: break-word;
+            color: #cbd5e1;
         }
     </style>
 </head>
 <body>
 
-    <!-- Error Modal -->
     <div id="error-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -146,67 +170,67 @@
         </div>
     </div>
 
-    <!-- Login Screen -->
     <div id="login-screen" class="container">
         <h1>Simulator Alpha (Miller's Law)</h1>
-        <p>Please enter your API key to access the training environment.</p>
-        <input type="text" id="api-key-input" placeholder="Paste Google Gemini API Key here (starts with AQ.)" autocomplete="off">
+        <p class="subtitle">Please enter your API key to access the training environment.</p>
+        <input type="password" id="api-key-input" placeholder="Paste Google Gemini API Key here (starts with AIza...)" autocomplete="off">
         <br>
         <button id="unlock-btn">Unlock Simulator</button>
     </div>
 
-    <!-- Audio Setup Screen -->
     <div id="intro-screen" class="container" style="display: none;">
         <h2>Before We Begin: Audio Setup</h2>
-        <p>This interactive simulation requires your microphone so you can speak directly to the patient.</p>
+        <p class="subtitle">This interactive simulation requires your microphone so you can speak directly to the patient.</p>
         
-        <div style="background-color: #334155; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
-            <p><strong>Step 1:</strong> Click the button below.</p>
-            <p><strong>Step 2:</strong> Your browser will display a popup near the top of the screen.</p>
-            <p><strong>Step 3:</strong> Click <strong>"Allow"</strong> to grant microphone access.</p>
+        <div style="background-color: #334155; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border: 1px solid #475569;">
+            <p style="margin: 10px 0;"><strong>Step 1:</strong> Click the button below.</p>
+            <p style="margin: 10px 0;"><strong>Step 2:</strong> Your browser will display a popup near the top of the screen.</p>
+            <p style="margin: 10px 0;"><strong>Step 3:</strong> Click <strong>"Allow"</strong> to grant microphone access.</p>
         </div>
 
-        <p id="mic-error" style="color: #ef4444; display: none; font-weight: bold;">
+        <p id="mic-error" style="color: #ef4444; display: none; font-weight: bold; margin-bottom: 15px;">
             Microphone access was denied or not found. Please check your browser settings and try again.
         </p>
 
         <button id="test-mic-btn">Test Microphone & Continue</button>
     </div>
 
-    <!-- Main Simulator Screen -->
     <div id="simulator-screen" class="container" style="display: none;">
         <h2>Scenario 1: NHS Reception (Miller's Law Rubric)</h2>
-        <p>Speak directly to the patient to de-escalate the situation.</p>
+        <p class="subtitle">Speak directly to the patient to de-escalate the situation.</p>
         
         <div class="video-container">
-            <video id="scenario-video" controls>
+            <video id="scenario-video" controls playsinline>
+                <!-- Initial prompt video -->
                 <source src="alpha-prompt.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
         </div>
 
         <div>
-            <button id="record-btn" style="background-color: #b91c1c;">🎤 Start Recording</button>
+            <button id="record-btn" class="record-btn">🎤 Start Recording</button>
             <button id="submit-btn" disabled>Evaluate Response</button>
         </div>
 
-        <h3 style="text-align: left; margin-top: 20px;">Your Transcript:</h3>
+        <h3 style="text-align: left; margin-top: 20px; font-size: 1rem; color: #f8fafc;">Your Transcript:</h3>
         <div id="transcript-box" class="text-box">
             Awaiting input...
         </div>
 
         <div id="evaluation-box" class="text-box">
-            <h3>Evaluation Results</h3>
+            <h3 style="margin-top: 0; color: white;">Evaluation Results</h3>
             <p id="eval-score">Score: </p>
-            <p id="eval-feedback">Feedback: </p>
+            <p id="eval-feedback" style="margin-bottom: 0;">Feedback: </p>
         </div>
     </div>
 
     <script>
+        // State variables
         let activeApiKey = '';
         let currentTranscript = '';
         let recognition;
 
+        // UI Elements
         const loginScreen = document.getElementById('login-screen');
         const introScreen = document.getElementById('intro-screen');
         const simulatorScreen = document.getElementById('simulator-screen');
@@ -248,15 +272,20 @@
 
         testMicBtn.addEventListener('click', async () => {
             try {
+                // Request mic permission
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Stop the stream immediately, we just needed the permission granted
                 stream.getTracks().forEach(track => track.stop());
                 
+                // Transition to main simulator screen
                 introScreen.style.display = 'none';
                 simulatorScreen.style.display = 'block';
+                
+                // Initialize speech recognition capabilities
                 setupSpeechRecognition();
                 
-                // This line forces the video to start immediately
-                scenarioVideo.play();
+                // Force the primary prompt video to start immediately after onboarding
+                scenarioVideo.play().catch(e => console.warn("Auto-play prevented by browser:", e));
                 
             } catch (err) {
                 micError.style.display = 'block';
@@ -268,25 +297,31 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = true;
+                recognition.continuous = true; // Keep listening until stopped
+                recognition.interimResults = true; // Show results while speaking
 
                 let isRecording = false;
 
+                // Toggle recording state
                 recordBtn.addEventListener('click', () => {
                     if (!isRecording) {
+                        currentTranscript = ''; // Reset transcript on new recording
                         recognition.start();
                         isRecording = true;
                         recordBtn.innerText = "⏹️ Stop Recording";
                         recordBtn.style.backgroundColor = "#475569";
                         submitBtn.disabled = true;
+                        evaluationBox.style.display = 'none'; // Hide previous evaluation
                         transcriptBox.innerText = "Listening...";
                     } else {
                         recognition.stop();
                         isRecording = false;
                         recordBtn.innerText = "🎤 Start Recording";
-                        recordBtn.style.backgroundColor = "#b91c1c";
-                        submitBtn.disabled = false;
+                        recordBtn.style.backgroundColor = "#dc2626"; // Return to red
+                        // Enable submit if we have transcript text
+                        if (currentTranscript.trim().length > 0) {
+                            submitBtn.disabled = false;
+                        }
                     }
                 });
 
@@ -298,21 +333,25 @@
                         }
                     }
                     if (finalTranscript !== '') {
-                        currentTranscript = finalTranscript;
+                        currentTranscript += finalTranscript + ' ';
                         transcriptBox.innerText = currentTranscript;
                     }
                 };
 
                 recognition.onerror = (event) => {
                     showError("Speech recognition error: " + event.error);
+                    isRecording = false;
+                    recordBtn.innerText = "🎤 Start Recording";
+                    recordBtn.style.backgroundColor = "#dc2626";
                 };
             } else {
-                showError("Your browser does not support Speech Recognition. Please use Chrome or Edge.");
+                showError("Your browser does not support Speech Recognition. Please use Google Chrome or Microsoft Edge.");
             }
         }
 
         submitBtn.addEventListener('click', async () => {
-            if (!currentTranscript) {
+            const finalSpeech = currentTranscript.trim();
+            if (!finalSpeech) {
                 showError("Please record a response first.");
                 return;
             }
@@ -320,17 +359,19 @@
             submitBtn.disabled = true;
             submitBtn.innerText = "Evaluating Response...";
 
+            // Use the flash model for speed and cost efficiency
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${activeApiKey}`;
             
+            // Construct the strictly enforced prompt payload
             const requestBody = {
                 systemInstruction: {
                     parts: [{
-                        text: "You are an expert assessor evaluating a receptionist handling an aggressive patient in an NHS environment. Evaluate the user's response based on Miller's Law of communication: 'To understand what another person is saying, you must assume that it is true and try to imagine what it could be true of.' The learner must demonstrate active listening, empathy, and suspend judgment. They should attempt to uncover the root cause of the patient's frustration rather than acting defensively, while still maintaining professional boundaries and patient privacy."
+                        text: "You are an expert assessor evaluating a receptionist handling an aggressive patient in an NHS environment. Evaluate the user's response based on Miller's Law of communication: 'To understand what another person is saying, you must assume that it is true and try to imagine what it could be true of.' \n\nCRITICAL INSTRUCTION: First, determine if the user's response is relevant to the scenario (addressing a patient, discussing appointments, acknowledging frustration, etc.). If the response is completely off-topic nonsense (e.g., talking about animals, food, or unrelated subjects), immediately assign a score of 0. \n\nIf the response is relevant, evaluate based on these criteria: The learner must demonstrate active listening, empathy, and suspend judgment. They should attempt to uncover the root cause of the patient's frustration rather than acting defensively, while still maintaining professional boundaries and patient privacy."
                     }]
                 },
                 contents: [{
                     parts: [{
-                        text: `Evaluate this response: "${currentTranscript}"`
+                        text: `Evaluate this response: "${finalSpeech}"`
                     }]
                 }],
                 generationConfig: {
@@ -362,19 +403,32 @@
                 const aiResponseText = data.candidates[0].content.parts[0].text;
                 const result = JSON.parse(aiResponseText);
 
+                // Display Results
                 evaluationBox.style.display = 'block';
                 evalScore.innerText = `Score: ${result.score}%`;
                 evalFeedback.innerText = result.feedback;
 
+                // Apply dynamic background color based on score
                 if (result.score >= 80) {
-                    scenarioVideo.src = "branch1.mp4"; 
-                    console.log("Loading Good Branch");
+                    evaluationBox.style.backgroundColor = '#166534'; // Green for high score
+                    evaluationBox.style.borderColor = '#14532d';
                 } else if (result.score >= 40) {
-                    scenarioVideo.src = "branch2.mp4"; 
-                    console.log("Loading Acceptable Branch");
+                    evaluationBox.style.backgroundColor = '#854d0e'; // Yellow/Orange for mid score
+                    evaluationBox.style.borderColor = '#713f12';
                 } else {
-                    scenarioVideo.src = "branch3.mp4"; 
-                    console.log("Loading Bad Branch");
+                    evaluationBox.style.backgroundColor = '#991b1b'; // Red for low/failed score
+                    evaluationBox.style.borderColor = '#7f1d1d';
+                }
+
+                if (result.score >= 80) {
+                    scenarioVideo.src = "branch3.mp4"; // Successful De-escalation
+                    console.log("Loading Good Branch (Branch 3)");
+                } else if (result.score >= 40) {
+                    scenarioVideo.src = "branch2.mp4"; // Moderate/Acceptable
+                    console.log("Loading Acceptable Branch (Branch 2)");
+                } else {
+                    scenarioVideo.src = "branch1.mp4"; // Escalation/Failure (or off-topic)
+                    console.log("Loading Bad Branch (Branch 1)");
                 }
                 
                 scenarioVideo.play();
