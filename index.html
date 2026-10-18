@@ -11,7 +11,7 @@
 <body><main>
 <h1>Scenario 1: NHS Reception</h1>
 <p class="subtitle">Miller's Law · Respond to the patient calmly and constructively</p>
-<div class="video-shell"><video id="scenario-video" controls playsinline preload="metadata"><source src="alpha-prompt.mp4" type="video/mp4">Your browser does not support HTML video.</video></div>
+<div class="video-shell"><video id="scenario-video" controls playsinline autoplay preload="auto"><source src="alpha-prompt.mp4" type="video/mp4">Your browser does not support HTML video.</video></div>
 <p class="status" id="video-status" role="status" aria-live="polite"></p>
 <label class="heading" for="response">Your response to the patient</label>
 <textarea id="response" class="input" placeholder="Type your response here, or choose Start Speaking to dictate it…" aria-describedby="response-help"></textarea>
@@ -27,6 +27,26 @@ const $=id=>document.getElementById(id);
 const response=$('response'),record=$('record'),evaluate=$('evaluate'),retry=$('retry'),status=$('mic-status'),feedback=$('feedback'),video=$('scenario-video');
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition=null,recording=false,baseText='',finalSpeech='',interimSpeech='',stopRequested=false;
+// Attempt immediate playback. When a browser disallows unmuted autoplay,
+// retry muted rather than leaving the opening scene paused.
+async function startVideo({initial=false}={}){
+  video.muted=false;
+  try{
+    await video.play();
+    $('video-status').textContent='';
+  }catch(_){
+    try{
+      video.muted=true;
+      await video.play();
+      $('video-status').textContent='Video is playing muted because your browser restricted autoplay. Use the video sound control to unmute.';
+    }catch(_){
+      $('video-status').textContent='Press Play on the video to begin'+(initial?' the scenario.':'.');
+    }
+  }
+}
+// Start as soon as the opening video is ready, and also attempt on page load.
+video.addEventListener('loadeddata',()=>{if(!video.paused)return;startVideo({initial:video.currentSrc.includes('alpha-prompt.mp4')});});
+window.addEventListener('load',()=>{if(video.paused)startVideo({initial:true});});
 if(!SpeechRecognition){record.disabled=true;record.title='Speech recognition not supported. You can type your response.';status.textContent='Speech recognition is unavailable in this browser. You can type your response normally.';}
 function setRecording(active){recording=active;record.textContent=active?'⏹ Stop Speaking':'🎙 Start Speaking (Optional)';record.setAttribute('aria-pressed',String(active));}
 function updatedText(){response.value=[baseText,finalSpeech,interimSpeech].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();}
@@ -60,13 +80,16 @@ function showFeedback(r){$('score').textContent='Indicative score: '+r.score+'%'
  if(r.brief){$('paragraph1').textContent='Thanks for giving this scenario a try. Your response may be too short or may not yet address the patient’s concern. That is a useful starting point for another attempt.';$('paragraph2').textContent='Try acknowledging how the patient feels and asking a calm, practical question about what has happened. You can edit your response and evaluate it again.';}
  else{$('paragraph1').textContent=r.good?'You acknowledged the patient’s feelings and moved towards understanding their concern. Those are valuable de-escalation behaviours.':r.negative?'You have started responding to a challenging situation. Some of the wording may come across as dismissive or escalate the conversation, even when that is not your intention.':'Thank you for working through this situation. Your response contains some useful elements, and there is an opportunity to make the patient feel more heard and supported.';
  $('paragraph2').textContent=(r.empathy?'You have included acknowledgement of the patient’s perspective. ':'Begin by recognising the patient’s frustration without judging it. ')+(r.inquiry?'You have also offered to explore the issue. ':'Then ask what has happened or explain how you can check their concern. ')+(r.negative?'Avoid phrases that dismiss, blame or silence the patient. ':'Keep your language calm, practical and professional. ')+'You can revise the wording and try again.';}
- feedback.hidden=false;feedback.scrollIntoView({behavior:'smooth',block:'nearest'});
+ feedback.hidden=false;
  // Distinct video outcomes share this single repeatable routing point.
  const branch=r.score>=80?'branch3.mp4':r.score>=40?'branch2.mp4':'branch1.mp4';
- video.pause();video.src=branch;video.load();$('video-status').textContent='Selected consequence: '+(r.score>=80?'successful de-escalation':r.score>=40?'partial de-escalation':'escalation')+'. Play the video to see the outcome.';
+ video.pause();video.src=branch;video.load();
+ // Evaluation is a direct button interaction, so request branch playback immediately.
+ startVideo();
+ video.scrollIntoView({behavior:'smooth',block:'start'});
 }
 evaluate.addEventListener('click',()=>{if(recording){stopRecording();status.textContent='Please wait for recording to finish, then review and evaluate your response.';return;}const answer=response.value.trim();if(!answer){status.textContent='Please type or dictate a response before evaluating.';response.focus();return;}status.textContent='Response assessed locally. You may edit and reassess it.';showFeedback(evaluateText(answer));});
-retry.addEventListener('click',()=>{if(recording)stopRecording();response.value='';baseText='';finalSpeech='';interimSpeech='';feedback.hidden=true;video.pause();video.src='alpha-prompt.mp4';video.load();$('video-status').textContent='';status.textContent='Ready for another attempt. Type or speak your response.';response.focus();});
+retry.addEventListener('click',()=>{if(recording)stopRecording();response.value='';baseText='';finalSpeech='';interimSpeech='';feedback.hidden=true;video.pause();video.src='alpha-prompt.mp4';video.load();startVideo({initial:true});status.textContent='Ready for another attempt. Type or speak your response.';response.focus();});
 video.addEventListener('error',()=>{$('video-status').textContent='Video unavailable: make sure alpha-prompt.mp4 and branch1.mp4, branch2.mp4, branch3.mp4 are in the same folder as this HTML file.';});
 })();
 </script>
