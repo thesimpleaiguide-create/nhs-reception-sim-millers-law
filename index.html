@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NHS Reception Simulator - Miller's Law Alpha</title>
+    <title>NHS Reception Simulator - Miller's Law Alpha (Local)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e293b; /* Dark slate background */
+            background-color: #1e293b;
             color: #f8fafc;
             margin: 0;
             padding: 20px;
@@ -18,7 +18,7 @@
         }
 
         .container {
-            background-color: #273549; /* Slightly lighter slate for containers */
+            background-color: #273549;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
@@ -28,7 +28,7 @@
         }
 
         h1, h2 {
-            color: #60a5fa; /* Blue accent for headers */
+            color: #60a5fa;
             margin-bottom: 5px;
         }
 
@@ -38,21 +38,10 @@
             font-size: 0.95rem;
         }
 
-        input[type="text"], input[type="password"] {
-            width: 80%;
-            padding: 12px;
-            margin: 20px 0;
-            border-radius: 6px;
-            border: 1px solid #475569;
-            background-color: #334155;
-            color: white;
-            font-size: 16px;
-        }
-
         button {
             padding: 12px 24px;
             font-size: 16px;
-            background-color: #3b82f6; /* Blue button */
+            background-color: #3b82f6;
             color: white;
             border: none;
             border-radius: 6px;
@@ -73,7 +62,7 @@
         }
 
         .record-btn {
-            background-color: #dc2626; /* Red for recording */
+            background-color: #dc2626;
         }
         .record-btn:hover {
             background-color: #b91c1c;
@@ -104,7 +93,7 @@
         }
 
         #evaluation-box {
-            background-color: #166534; /* Green success background */
+            background-color: #166534;
             border-color: #14532d;
             display: none;
         }
@@ -139,7 +128,7 @@
         }
 
         .modal-header {
-            color: #ef4444; /* Red alert */
+            color: #ef4444;
             font-size: 1.25rem;
             font-weight: bold;
             margin-bottom: 15px;
@@ -170,17 +159,11 @@
         </div>
     </div>
 
-    <div id="login-screen" class="container">
+    <!-- Starts directly on the Audio Setup screen (No API key required) -->
+    <div id="intro-screen" class="container">
         <h1>Simulator Alpha (Miller's Law)</h1>
-        <p class="subtitle">Please enter your API key to access the training environment.</p>
-        <input type="password" id="api-key-input" placeholder="Paste Google Gemini API Key here (starts with AIza...)" autocomplete="off">
-        <br>
-        <button id="unlock-btn">Unlock Simulator</button>
-    </div>
-
-    <div id="intro-screen" class="container" style="display: none;">
         <h2>Before We Begin: Audio Setup</h2>
-        <p class="subtitle">This interactive simulation requires your microphone so you can speak directly to the patient.</p>
+        <p class="subtitle">This interactive simulation runs locally in your browser and requires your microphone so you can speak directly to the patient.</p>
         
         <div style="background-color: #334155; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; border: 1px solid #475569;">
             <p style="margin: 10px 0;"><strong>Step 1:</strong> Click the button below.</p>
@@ -201,7 +184,6 @@
         
         <div class="video-container">
             <video id="scenario-video" controls playsinline>
-                <!-- Initial prompt video -->
                 <source src="alpha-prompt.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -226,19 +208,16 @@
 
     <script>
         // State variables
-        let activeApiKey = '';
         let currentTranscript = '';
+        let interimTranscript = '';
         let recognition;
 
         // UI Elements
-        const loginScreen = document.getElementById('login-screen');
         const introScreen = document.getElementById('intro-screen');
         const simulatorScreen = document.getElementById('simulator-screen');
         const errorModal = document.getElementById('error-modal');
         const modalText = document.getElementById('modal-text');
         
-        const unlockBtn = document.getElementById('unlock-btn');
-        const apiKeyInput = document.getElementById('api-key-input');
         const testMicBtn = document.getElementById('test-mic-btn');
         const micError = document.getElementById('mic-error');
         
@@ -259,34 +238,16 @@
             errorModal.style.display = 'none';
         }
 
-        unlockBtn.addEventListener('click', () => {
-            const key = apiKeyInput.value.trim();
-            if (key.length > 10) {
-                activeApiKey = key;
-                loginScreen.style.display = 'none';
-                introScreen.style.display = 'block';
-            } else {
-                showError("Please enter a valid API key.");
-            }
-        });
-
         testMicBtn.addEventListener('click', async () => {
             try {
-                // Request mic permission
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                // Stop the stream immediately, we just needed the permission granted
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Transition to main simulator screen
                 introScreen.style.display = 'none';
                 simulatorScreen.style.display = 'block';
                 
-                // Initialize speech recognition capabilities
                 setupSpeechRecognition();
-                
-                // Force the primary prompt video to start immediately after onboarding
                 scenarioVideo.play().catch(e => console.warn("Auto-play prevented by browser:", e));
-                
             } catch (err) {
                 micError.style.display = 'block';
                 console.error("Microphone access failed:", err);
@@ -297,45 +258,48 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true; // Keep listening until stopped
-                recognition.interimResults = true; // Show results while speaking
+                recognition.continuous = true;
+                recognition.interimResults = true;
 
                 let isRecording = false;
 
-                // Toggle recording state
                 recordBtn.addEventListener('click', () => {
                     if (!isRecording) {
-                        currentTranscript = ''; // Reset transcript on new recording
+                        currentTranscript = '';
+                        interimTranscript = '';
                         recognition.start();
                         isRecording = true;
                         recordBtn.innerText = "⏹️ Stop Recording";
                         recordBtn.style.backgroundColor = "#475569";
                         submitBtn.disabled = true;
-                        evaluationBox.style.display = 'none'; // Hide previous evaluation
+                        evaluationBox.style.display = 'none';
                         transcriptBox.innerText = "Listening...";
                     } else {
                         recognition.stop();
                         isRecording = false;
                         recordBtn.innerText = "🎤 Start Recording";
-                        recordBtn.style.backgroundColor = "#dc2626"; // Return to red
-                        // Enable submit if we have transcript text
-                        if (currentTranscript.trim().length > 0) {
+                        recordBtn.style.backgroundColor = "#dc2626";
+                        
+                        const fullText = (currentTranscript + ' ' + interimTranscript).trim();
+                        if (fullText.length > 0) {
+                            currentTranscript = fullText;
+                            interimTranscript = '';
+                            transcriptBox.innerText = currentTranscript;
                             submitBtn.disabled = false;
                         }
                     }
                 });
 
                 recognition.onresult = (event) => {
-                    let finalTranscript = '';
+                    interimTranscript = '';
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
+                            currentTranscript += event.results[i][0].transcript + ' ';
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
                         }
                     }
-                    if (finalTranscript !== '') {
-                        currentTranscript += finalTranscript + ' ';
-                        transcriptBox.innerText = currentTranscript;
-                    }
+                    transcriptBox.innerText = (currentTranscript + interimTranscript).trim() || "Listening...";
                 };
 
                 recognition.onerror = (event) => {
@@ -349,96 +313,130 @@
             }
         }
 
-        submitBtn.addEventListener('click', async () => {
+        // Local Browser Rubric Engine (Miller's Law)
+        function evaluateLocally(speechText) {
+            const text = speechText.toLowerCase();
+            const words = text.split(/\s+/).filter(w => w.length > 0);
+
+            // 1. Check for basic length and scenario relevance
+            const relevanceKeywords = [
+                'help', 'appointment', 'doctor', 'gp', 'wait', 'waiting', 'understand', 
+                'sorry', 'frustrat', 'upset', 'see', 'check', 'look', 'name', 'date', 
+                'patient', 'clinic', 'reception', 'today', 'time', 'book', 'system', 
+                'sort', 'issue', 'problem', 'hear', 'listen', 'tell', 'explain', 'happen'
+            ];
+            
+            const isRelevant = relevanceKeywords.some(kw => text.includes(kw));
+
+            if (words.length < 4 || !isRelevant) {
+                return {
+                    score: 0,
+                    feedback: "Your response appeared off-topic or too brief for the NHS reception scenario. Under Miller's Law, begin by acknowledging the patient's situation and asking how you can assist them."
+                };
+            }
+
+            // 2. Define Miller's Law Rubric Categories
+            const empathyPatterns = [
+                'understand', 'hear you', 'frustrat', 'upset', 'sorry', 'appreciate', 
+                'see why', 'makes sense', 'stressful', 'annoying', 'difficult', 
+                'concerned', 'worried', 'pain', 'long time'
+            ];
+
+            const inquiryPatterns = [
+                'what happened', 'tell me', 'explain', 'let\'s look', 'lets look', 
+                'check', 'find out', 'how can i help', 'what can i do', 'take your name', 
+                'date of birth', 'details', 'sort this', 'together', 'see what', 'options',
+                'let me see', 'look into'
+            ];
+
+            const professionalPatterns = [
+                'please', 'thank you', 'moment', 'seat', 'quiet', 'privately', 'bear with me'
+            ];
+
+            const defensivePenalties = [
+                'calm down', 'not my fault', 'nothing i can do', 'policy', 'rules', 
+                'shouting', 'yelling', 'rude', 'security', 'police', 'leave', 
+                'your fault', 'wrong', 'impossible', 'wait your turn', 'be quiet', 'shut up'
+            ];
+
+            // Count matches
+            const empathyHits = empathyPatterns.filter(p => text.includes(p)).length;
+            const inquiryHits = inquiryPatterns.filter(p => text.includes(p)).length;
+            const professionalHits = professionalPatterns.filter(p => text.includes(p)).length;
+            const defensiveHits = defensivePenalties.filter(p => text.includes(p)).length;
+
+            // Calculate Base Score
+            let score = 30; // Base score for an on-topic response
+            score += Math.min(empathyHits * 20, 35);       // Up to +35 for active listening/empathy
+            score += Math.min(inquiryHits * 15, 30);       // Up to +30 for uncovering root cause
+            score += Math.min(professionalHits * 5, 10);   // Up to +10 for polite phrasing
+            if (words.length >= 12) score += 5;            // +5 for a complete, thoughtful sentence
+
+            // Apply penalties for defensive or escalating language
+            score -= (defensiveHits * 30);
+
+            // Clamp score between 0 and 100
+            score = Math.max(0, Math.min(100, score));
+
+            // Build specific feedback
+            let feedbackParts = [];
+
+            if (defensiveHits > 0) {
+                feedbackParts.push("You used defensive or escalating phrasing (e.g., telling the patient to calm down or blaming policy), which breaks Miller's Law by judging the patient rather than uncovering the root cause.");
+            }
+
+            if (empathyHits > 0 && inquiryHits > 0 && defensiveHits === 0) {
+                feedbackParts.push("Excellent application of Miller's Law. You suspended judgment, validated the patient's frustration with empathy, and actively worked to uncover the root cause of the issue.");
+            } else {
+                if (empathyHits > 0) {
+                    feedbackParts.push("Good job acknowledging the patient's feelings and showing empathy.");
+                } else {
+                    feedbackParts.push("To improve under Miller's Law, first validate the patient's perspective (e.g., 'I understand why you are frustrated').");
+                }
+
+                if (inquiryHits > 0) {
+                    feedbackParts.push("You effectively offered practical help to investigate the root cause of the problem.");
+                } else {
+                    feedbackParts.push("Try asking open, non-defensive questions or offering to check their details so you can uncover what went wrong.");
+                }
+            }
+
+            return {
+                score: score,
+                feedback: feedbackParts.join(' ')
+            };
+        }
+
+        submitBtn.addEventListener('click', () => {
             const finalSpeech = currentTranscript.trim();
             if (!finalSpeech) {
                 showError("Please record a response first.");
                 return;
             }
 
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Evaluating Response...";
+            const result = evaluateLocally(finalSpeech);
 
-            // Use the flash model for speed and cost efficiency
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${activeApiKey}`;
-            
-            // Construct the strictly enforced prompt payload
-            const requestBody = {
-                systemInstruction: {
-                    parts: [{
-                        text: "You are an expert assessor evaluating a receptionist handling an aggressive patient in an NHS environment. Evaluate the user's response based on Miller's Law of communication: 'To understand what another person is saying, you must assume that it is true and try to imagine what it could be true of.' \n\nCRITICAL INSTRUCTION: First, determine if the user's response is relevant to the scenario (addressing a patient, discussing appointments, acknowledging frustration, etc.). If the response is completely off-topic nonsense (e.g., talking about animals, food, or unrelated subjects), immediately assign a score of 0. \n\nIf the response is relevant, evaluate based on these criteria: The learner must demonstrate active listening, empathy, and suspend judgment. They should attempt to uncover the root cause of the patient's frustration rather than acting defensively, while still maintaining professional boundaries and patient privacy."
-                    }]
-                },
-                contents: [{
-                    parts: [{
-                        text: `Evaluate this response: "${finalSpeech}"`
-                    }]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            score: { type: "INTEGER", description: "A score from 0 to 100 based on application of Miller's Law." },
-                            feedback: { type: "STRING", description: "Specific, actionable feedback based on how well they applied Miller's Law to the scenario." }
-                        },
-                        required: ["score", "feedback"]
-                    }
-                }
-            };
+            // Display Results
+            evaluationBox.style.display = 'block';
+            evalScore.innerText = `Score: ${result.score}%`;
+            evalFeedback.innerText = result.feedback;
 
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error?.message || "Unknown API Error");
-                }
-
-                const aiResponseText = data.candidates[0].content.parts[0].text;
-                const result = JSON.parse(aiResponseText);
-
-                // Display Results
-                evaluationBox.style.display = 'block';
-                evalScore.innerText = `Score: ${result.score}%`;
-                evalFeedback.innerText = result.feedback;
-
-                // Apply dynamic background color based on score
-                if (result.score >= 80) {
-                    evaluationBox.style.backgroundColor = '#166534'; // Green for high score
-                    evaluationBox.style.borderColor = '#14532d';
-                } else if (result.score >= 40) {
-                    evaluationBox.style.backgroundColor = '#854d0e'; // Yellow/Orange for mid score
-                    evaluationBox.style.borderColor = '#713f12';
-                } else {
-                    evaluationBox.style.backgroundColor = '#991b1b'; // Red for low/failed score
-                    evaluationBox.style.borderColor = '#7f1d1d';
-                }
-
-                if (result.score >= 80) {
-                    scenarioVideo.src = "branch3.mp4"; // Successful De-escalation
-                    console.log("Loading Good Branch (Branch 3)");
-                } else if (result.score >= 40) {
-                    scenarioVideo.src = "branch2.mp4"; // Moderate/Acceptable
-                    console.log("Loading Acceptable Branch (Branch 2)");
-                } else {
-                    scenarioVideo.src = "branch1.mp4"; // Escalation/Failure (or off-topic)
-                    console.log("Loading Bad Branch (Branch 1)");
-                }
-                
-                scenarioVideo.play();
-
-            } catch (error) {
-                showError("Failed to evaluate. API Error: " + error.message);
-            } finally {
-                submitBtn.innerText = "Evaluate Response";
-                submitBtn.disabled = false;
+            // Apply dynamic background color & video branch based on score
+            if (result.score >= 80) {
+                evaluationBox.style.backgroundColor = '#166534'; // Green
+                evaluationBox.style.borderColor = '#14532d';
+                scenarioVideo.src = "branch3.mp4"; // Successful De-escalation
+            } else if (result.score >= 40) {
+                evaluationBox.style.backgroundColor = '#854d0e'; // Yellow/Orange
+                evaluationBox.style.borderColor = '#713f12';
+                scenarioVideo.src = "branch2.mp4"; // Moderate/Acceptable
+            } else {
+                evaluationBox.style.backgroundColor = '#991b1b'; // Red
+                evaluationBox.style.borderColor = '#7f1d1d';
+                scenarioVideo.src = "branch1.mp4"; // Escalation/Failure
             }
+            
+            scenarioVideo.play().catch(e => console.warn("Video play error:", e));
         });
     </script>
 </body>
